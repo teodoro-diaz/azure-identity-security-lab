@@ -411,12 +411,10 @@ azure-identity-security-lab/
 - Git y GitHub
 
 ## 12. Autor y repositorio
-
-Proyecto desarrollado como parte de un portafolio práctico de Cloud Engineering, Infrastructure as Code, Azure Security y DevOps.
-
-Repositorio:
-
-https://github.com/Chadicito/azure-identity-security-lab
+**Teodoro Diaz**<br>
+Cloud & Infrastructure Engineer<br>
+[GitHub](https://github.com/teodoro-diaz) |
+[LinkedIn](https://www.linkedin.com/in/teodorodiazcha/)
 
 ---
 
