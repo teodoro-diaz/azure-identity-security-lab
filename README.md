@@ -22,6 +22,8 @@ This project demonstrates how to deploy a Python Flask application on Azure App 
 
 Infrastructure is provisioned using **Terraform**, while Azure-native identity, authorization and networking services protect access to sensitive information.
 
+The App Service exposes an HTTPS application endpoint, while Key Vault is configured with public network access disabled and accessed through a Private Endpoint.
+
 ## 🏗️ Architecture Components
 
 | Component | Configuration / Purpose |
@@ -44,7 +46,7 @@ Infrastructure is provisioned using **Terraform**, while Azure-native identity, 
 | Authentication | System-assigned Managed Identity |
 | Authorization | Azure RBAC — Key Vault Secrets User |
 | Network access | Private Endpoint and Private Link |
-| Public exposure | Key Vault public network access disabled |
+| Key Vault exposure | Public network access disabled |
 | DNS resolution | Private DNS Zone with VNet link |
 | Application transport | HTTPS |
 | Secret protection | Secret value is never returned by the API |
@@ -60,6 +62,14 @@ The application exposes two HTTP endpoints:
 
 The `/secret` endpoint reports the retrieval status without exposing the actual secret value.
 
+## 📚 Project Documentation
+
+Additional technical documentation is available:
+
+- [Architecture Design](docs/architecture.md)
+- [Security Design](docs/security-design.md)
+- [Cost Analysis](docs/cost-analysis.md)
+
 ## 📂 Repository Structure
 
 ```text
@@ -74,8 +84,6 @@ azure-identity-security-lab/
 │   ├── architecture.md
 │   ├── cost-analysis.md
 │   └── security-design.md
-├── diagrams/
-├── evidence/
 ├── terraform/
 │   └── environments/
 │       └── dev/
@@ -88,8 +96,10 @@ azure-identity-security-lab/
 │           ├── private_endpoint.tf
 │           ├── provider.tf
 │           ├── rbac.tf
+│           ├── terraform.tfstate* (local only, not committed)
 │           ├── variables.tf
-│           └── versions.tf
+│           ├── versions.tf
+│           └── .terraform.lock.hcl
 ├── .gitignore
 └── README.md
 ```
@@ -112,28 +122,41 @@ az account set --subscription "<SUBSCRIPTION_ID>"
 az account show
 ```
 
+Configure the subscription ID as a Terraform environment variable:
+
+```bash
+export TF_VAR_subscription_id="$(az account show --query id -o tsv)"
+```
+
 ### 2. Initialize Terraform
 
 ```bash
 cd terraform/environments/dev
+
 terraform init
 ```
 
-### 3. Review Infrastructure Changes
+### 3. Validate Terraform Configuration
+
+```bash
+terraform validate
+```
+
+### 4. Review Infrastructure Changes
 
 ```bash
 terraform plan
 ```
 
-Review the resources and potential costs before deployment.
+Review the planned resources, configuration and potential costs before deployment.
 
-### 4. Deploy Infrastructure
+### 5. Deploy Infrastructure
 
 ```bash
 terraform apply
 ```
 
-### 5. Review Deployment Outputs
+### 6. Review Deployment Outputs
 
 ```bash
 terraform output
@@ -141,42 +164,52 @@ terraform output
 
 ## 🧪 Validation
 
-The deployment validation covers:
+The following checks define the project's validation scope. They must be verified against a fresh deployment before being marked as completed.
 
-- [x] App Service deployment and HTTPS endpoint.
-- [x] Flask application health endpoint.
-- [x] System-assigned Managed Identity.
-- [x] Azure RBAC permissions.
-- [x] Key Vault secret retrieval.
-- [x] Private Endpoint connectivity.
-- [x] Private DNS resolution.
-- [x] Key Vault public network access disabled.
+- [ ] App Service deployment and HTTPS endpoint.
+- [ ] Flask application health endpoint.
+- [ ] System-assigned Managed Identity.
+- [ ] Azure RBAC permissions.
+- [ ] Key Vault secret retrieval.
+- [ ] Private Endpoint connectivity.
+- [ ] Private DNS resolution.
+- [ ] Key Vault public network access disabled.
 
 ## 📸 Evidence
 
-Execution screenshots and Azure resource validation will be documented here.
+Execution screenshots and Azure resource validation evidence will be added after the next deployment and verification cycle.
 
-See [`evidence/`](evidence/) for project validation evidence.
+Evidence will cover Terraform execution, application health, Managed Identity, RBAC permissions, private connectivity, secret retrieval and resource cleanup.
 
 ## 💰 Cost Management
 
-Azure resources in this lab may generate charges.
+Azure resources in this lab may generate charges while deployed.
 
 | Resource | Cost consideration |
 |---|---|
-| App Service Plan B1 | Compute plan charges |
+| App Service Plan B1 | Recurring compute plan charges |
 | Private Endpoint | Hourly and data processing charges |
 | Key Vault | Operations and transactions |
 | Private DNS Zone | Zone and DNS query charges |
 | Virtual Network | No base charge; associated services may incur costs |
 
-**Cost control:** Review regional pricing before deployment and remove resources when the lab is no longer required.
+**Cost control strategy:**
+
+- Review regional Azure pricing before deployment.
+- Use `terraform plan` to inspect resources before applying changes.
+- Keep the environment deployed only while performing tests.
+- Destroy resources when the lab is no longer required.
+- Verify resource cleanup in the Azure Portal.
+
+To remove the deployed infrastructure:
 
 ```bash
 terraform destroy
 ```
 
-Verify resource deletion in the Azure Portal. Key Vault soft-delete retention may preserve the deleted vault temporarily.
+**Important:** Key Vault soft-delete retention may preserve a deleted vault temporarily. Its deletion lifecycle should be considered when verifying cleanup.
+
+For detailed cost considerations, see [Cost Analysis](docs/cost-analysis.md).
 
 ## 🧰 Technologies
 
@@ -192,7 +225,6 @@ Verify resource deletion in the Azure Portal. Key Vault soft-delete retention ma
 - Git
 
 ---
-
 
 ## 👨‍💻 Author
 
