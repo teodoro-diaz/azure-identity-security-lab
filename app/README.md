@@ -1,22 +1,32 @@
-# Aplicación Flask — Azure Identity & Security Lab
+# Flask Application — Azure Identity & Security Lab
 
-## 1. Descripción
+[![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+[![Flask](https://img.shields.io/badge/Flask-Web%20Framework-000000?logo=flask&logoColor=white)](https://flask.palletsprojects.com/)
+[![Azure Identity](https://img.shields.io/badge/Azure-Managed%20Identity-0078D4?logo=microsoftazure&logoColor=white)](https://learn.microsoft.com/azure/app-service/overview-managed-identity)
+[![Key Vault](https://img.shields.io/badge/Azure-Key%20Vault-0078D4?logo=microsoftazure&logoColor=white)](https://learn.microsoft.com/azure/key-vault/)
 
-Aplicación web desarrollada en Python con Flask para demostrar la integración segura entre Azure App Service y Azure Key Vault mediante Microsoft Entra ID y Managed Identity.
+A Python Flask application deployed on **Azure App Service** to demonstrate secure secret retrieval from **Azure Key Vault** using Microsoft Entra ID and System-assigned Managed Identity.
 
-El objetivo es consumir secretos almacenados en Azure Key Vault sin incluir credenciales directamente en el código fuente.
+## 🎯 Application Overview
 
-## 2. Tecnologías utilizadas
+The application retrieves secrets from Azure Key Vault without storing credentials in the source code.
 
-- Python 3.12
-- Flask
-- Gunicorn
-- Azure Identity SDK
-- Azure Key Vault Secrets SDK
-- Azure App Service (Linux)
-- System-assigned Managed Identity
+Authentication is handled through `DefaultAzureCredential`, while Azure RBAC controls the permissions granted to the App Service identity.
 
-## 3. Estructura de archivos
+## 🧰 Technology Stack
+
+| Technology | Purpose |
+|---|---|
+| Python 3.12 | Application runtime |
+| Flask | Web framework |
+| Gunicorn | WSGI application server |
+| Azure Identity SDK | Authentication |
+| Azure Key Vault Secrets SDK | Secret retrieval |
+| Azure App Service | Application hosting |
+| Managed Identity | Passwordless authentication |
+| Azure RBAC | Authorization |
+
+## 📂 Application Structure
 
 ```text
 app/
@@ -25,18 +35,22 @@ app/
 └── README.md
 ```
 
-## 4. Endpoints disponibles
+## 🔌 API Endpoints
 
-| Endpoint | Método | Descripción |
+| Endpoint | Method | Description |
 |---|---|---|
-| `/health` | GET | Verifica el estado de la aplicación. |
-| `/secret` | GET | Recupera un secreto desde Azure Key Vault utilizando la identidad administrada. |
+| `/health` | GET | Checks application health |
+| `/secret` | GET | Retrieves a secret from Azure Key Vault |
 
 ### Health Check
 
-Permite comprobar que la aplicación está operativa.
+Request:
 
-Respuesta esperada:
+```http
+GET /health
+```
+
+Expected response:
 
 ```json
 {
@@ -47,11 +61,15 @@ Respuesta esperada:
 
 ### Secret Retrieval
 
-Consulta un secreto en Azure Key Vault utilizando `DefaultAzureCredential`.
+Request:
 
-La aplicación no devuelve el valor del secreto al cliente. Solamente informa si pudo recuperarlo correctamente.
+```http
+GET /secret
+```
 
-Respuesta esperada:
+The application uses `DefaultAzureCredential` and `SecretClient` to retrieve the configured secret from Azure Key Vault.
+
+Expected response:
 
 ```json
 {
@@ -61,88 +79,134 @@ Respuesta esperada:
 }
 ```
 
-## 5. Variables de entorno
+**Security note:** The secret value is never returned to the API client or written to application logs.
 
-| Variable | Descripción |
+## ⚙️ Environment Variables
+
+| Variable | Description |
 |---|---|
-| `KEY_VAULT_URL` | URL del Azure Key Vault. |
-| `KEY_VAULT_SECRET_NAME` | Nombre del secreto que se desea consultar. |
+| `KEY_VAULT_URL` | Azure Key Vault endpoint |
+| `KEY_VAULT_SECRET_NAME` | Name of the secret to retrieve |
 
-Ejemplo:
+Example:
 
 ```bash
 export KEY_VAULT_URL="https://<key-vault-name>.vault.azure.net/"
 export KEY_VAULT_SECRET_NAME="lab-secret"
 ```
 
-No almacenar secretos ni credenciales en estas variables.
+Do not store credentials or secret values in application configuration or source control.
 
-## 6. Ejecución local
+## 💻 Local Development
 
-Crear y activar un entorno virtual:
+### 1. Create a virtual environment
+
+From the repository root:
 
 ```bash
 python -m venv .venv
+```
+
+Activate it in Git Bash:
+
+```bash
 source .venv/Scripts/activate
 ```
 
-Instalar dependencias:
+### 2. Install dependencies
 
 ```bash
 pip install -r app/requirements.txt
 ```
 
-Ejecutar la aplicación:
+### 3. Authenticate to Azure
+
+For local development, `DefaultAzureCredential` can use the Azure CLI credentials.
+
+```bash
+az login
+az account show
+```
+
+The signed-in identity must have the required permissions to access the Key Vault.
+
+### 4. Configure environment variables
+
+```bash
+export KEY_VAULT_URL="https://<key-vault-name>.vault.azure.net/"
+export KEY_VAULT_SECRET_NAME="lab-secret"
+```
+
+### 5. Run the application
 
 ```bash
 python -m flask --app app.app run
 ```
 
-La aplicación estará disponible en:
+The application will be available at:
 
 ```text
 http://127.0.0.1:5000
 ```
 
-## 7. Seguridad e identidad
+Test the health endpoint:
 
-La aplicación utiliza `DefaultAzureCredential` para obtener credenciales de autenticación.
+```bash
+curl http://127.0.0.1:5000/health
+```
 
-En Azure App Service se utiliza una System-assigned Managed Identity.
+**Note:** Local `/secret` testing also requires network connectivity to the Key Vault Private Endpoint. An Azure CLI login alone does not provide private network access.
 
-El acceso a Key Vault se controla mediante Azure RBAC:
+## 🔐 Identity & Security
 
-- Identidad: Managed Identity del App Service.
-- Rol: Key Vault Secrets User.
-- Scope: recurso específico de Azure Key Vault.
+### Managed Identity
 
-La conectividad privada se implementa mediante:
+In Azure App Service, the application uses a System-assigned Managed Identity.
+
+This allows the application to obtain Microsoft Entra ID access tokens without storing usernames, passwords, client secrets or certificates.
+
+### Azure RBAC
+
+The App Service Managed Identity is assigned:
+
+- **Role:** Key Vault Secrets User
+- **Scope:** Specific Azure Key Vault resource
+
+This role provides the permissions required to read secrets.
+
+### Private Connectivity
+
+The application-to-Key Vault communication uses:
 
 - Azure Private Endpoint.
 - Azure Private DNS Zone.
 - App Service VNet Integration.
+- Key Vault public network access disabled.
 
-## 8. Validaciones realizadas
+## 🧪 Validation Scenarios
 
-- Aplicación desplegada en Azure App Service Linux.
-- Endpoint `/health` validado con HTTP 200.
-- Resolución DNS privada de Azure Key Vault.
-- Conectividad hacia Key Vault mediante Private Endpoint.
-- Obtención de token mediante Managed Identity.
-- Acceso autorizado a la API de secretos de Key Vault.
-- Recuperación exitosa del secreto de prueba.
-- Endpoint `/secret` validado con HTTP 200.
+The lab validation covers:
 
-## 9. Consideraciones de seguridad
+- App Service application availability.
+- `/health` endpoint returning HTTP 200.
+- Private DNS resolution for Azure Key Vault.
+- Private Endpoint connectivity.
+- Managed Identity token acquisition.
+- Azure RBAC authorization.
+- Successful retrieval of the test secret.
+- `/secret` endpoint returning HTTP 200 without exposing the secret value.
 
-- No almacenar credenciales en el código fuente.
-- No publicar valores de secretos en respuestas HTTP.
-- Aplicar mínimo privilegio mediante Azure RBAC.
-- Restringir el acceso público a Key Vault.
-- Utilizar conectividad privada para acceder a los servicios protegidos.
-- Evitar registrar información sensible en los logs.
+## 🛡️ Security Principles
+
+- No credentials embedded in source code.
+- No secret values returned in HTTP responses.
+- No sensitive values written to application logs.
+- Least-privilege authorization through Azure RBAC.
+- Private connectivity to Azure Key Vault.
+- Managed Identity for passwordless authentication.
 
 ---
 
-**Proyecto:** Azure Identity & Security Lab  
-**Repositorio:** https://github.com/Chadicito/azure-identity-security-lab
+**Project:** Azure Identity & Security Lab
+
+**Repository:** [azure-identity-security-lab](https://github.com/teodoro-diaz/azure-identity-security-lab)

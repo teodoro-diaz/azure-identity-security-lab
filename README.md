@@ -193,10 +193,11 @@ Verify resource deletion in the Azure Portal. Key Vault soft-delete retention ma
 
 ---
 
+
 ## 👨‍💻 Author
 
 **Teodoro Diaz**
 
 Cloud Infrastructure | Azure | Terraform | DevOps
 
-[GitHub Profile](https://github.com/teodoro-diaz)
+[GitHub Profile](https://github.com/teodoro-diaz) | [LinkedIn](https://www.linkedin.com/in/teodorodiazcha/)
